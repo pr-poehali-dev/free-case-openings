@@ -160,6 +160,66 @@ const cases: CaseType[] = [
       { id: '8-6', name: 'Sport Gloves | Pandora Box', rarity: 'legendary', image: skin3, price: 3500 },
     ]
   },
+  {
+    id: '9',
+    name: 'Spectrum Case',
+    description: 'Яркие разноцветные скины',
+    rarity: 'rare',
+    price: 280,
+    items: [
+      { id: '9-1', name: 'MP7 | Fade', rarity: 'common', image: skin1, price: 38 },
+      { id: '9-2', name: 'P250 | Ripple', rarity: 'common', image: skin1, price: 24 },
+      { id: '9-3', name: 'CZ75-Auto | Polymer', rarity: 'rare', image: skin7, price: 68 },
+      { id: '9-4', name: 'AK-47 | Bloodsport', rarity: 'rare', image: skin1, price: 125 },
+      { id: '9-5', name: 'M4A1-S | Decimator', rarity: 'epic', image: skin4, price: 320 },
+      { id: '9-6', name: 'Butterfly Knife | Gamma Doppler', rarity: 'legendary', image: skin6, price: 1450 },
+    ]
+  },
+  {
+    id: '10',
+    name: 'Chroma Case',
+    description: 'Хромированные скины',
+    rarity: 'epic',
+    price: 450,
+    items: [
+      { id: '10-1', name: 'Tec-9 | Isaac', rarity: 'common', image: skin7, price: 19 },
+      { id: '10-2', name: 'Sawed-Off | Serenity', rarity: 'common', image: skin1, price: 21 },
+      { id: '10-3', name: 'Desert Eagle | Naga', rarity: 'rare', image: skin8, price: 98 },
+      { id: '10-4', name: 'AK-47 | Cartel', rarity: 'rare', image: skin1, price: 105 },
+      { id: '10-5', name: 'Galil AR | Chatterbox', rarity: 'epic', image: skin1, price: 285 },
+      { id: '10-6', name: 'Bayonet | Doppler', rarity: 'legendary', image: skin3, price: 1350 },
+    ]
+  },
+  {
+    id: '11',
+    name: 'Glove Case',
+    description: 'Перчатки и ножи',
+    rarity: 'legendary',
+    price: 900,
+    items: [
+      { id: '11-1', name: 'Five-SeveN | Triumvirate', rarity: 'rare', image: skin7, price: 92 },
+      { id: '11-2', name: 'MP9 | Goo', rarity: 'rare', image: skin1, price: 78 },
+      { id: '11-3', name: 'USP-S | Flashback', rarity: 'epic', image: skin7, price: 395 },
+      { id: '11-4', name: 'M4A4 | Buzz Kill', rarity: 'epic', image: skin4, price: 420 },
+      { id: '11-5', name: 'Moto Gloves | Eclipse', rarity: 'legendary', image: skin3, price: 2800 },
+      { id: '11-6', name: 'Driver Gloves | King Snake', rarity: 'legendary', image: skin3, price: 3200 },
+    ]
+  },
+  {
+    id: '12',
+    name: 'Operation Case',
+    description: 'Эксклюзивные операционные скины',
+    rarity: 'epic',
+    price: 550,
+    items: [
+      { id: '12-1', name: 'SSG 08 | Death Strike', rarity: 'common', image: skin5, price: 42 },
+      { id: '12-2', name: 'PP-Bizon | Judgement', rarity: 'common', image: skin1, price: 36 },
+      { id: '12-3', name: 'M4A1-S | Nightmare', rarity: 'rare', image: skin4, price: 145 },
+      { id: '12-4', name: 'AK-47 | Phantom Disruptor', rarity: 'rare', image: skin1, price: 158 },
+      { id: '12-5', name: 'AWP | Containment Breach', rarity: 'epic', image: skin5, price: 465 },
+      { id: '12-6', name: 'Talon Knife | Fade', rarity: 'legendary', image: skin3, price: 1950 },
+    ]
+  },
 ];
 
 const rarityColors: Record<Rarity, string> = {
@@ -195,11 +255,33 @@ const Index = () => {
   const [rouletteOffset, setRouletteOffset] = useState(0);
   const [upgradeMode, setUpgradeMode] = useState(false);
   const [selectedUpgradeItems, setSelectedUpgradeItems] = useState<string[]>([]);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [upgradeResult, setUpgradeResult] = useState<{ success: boolean; item?: Item } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     audioRef.current = new Audio();
+    
+    const savedData = localStorage.getItem('cs2-cases-save');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setInventory(parsed.inventory || []);
+        setBalance(parsed.balance || 500);
+      } catch (e) {
+        console.error('Failed to load save data');
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    const saveData = {
+      inventory,
+      balance,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('cs2-cases-save', JSON.stringify(saveData));
+  }, [inventory, balance]);
 
   const playSound = (type: 'spin' | 'win') => {
     if (!audioRef.current) return;
@@ -243,20 +325,26 @@ const Index = () => {
     setSelectedCase(caseType);
     setIsOpening(true);
     setShowResult(false);
+    setRouletteOffset(0);
 
     const allItems = [...caseType.items];
     const extendedItems: Item[] = [];
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 100; i++) {
       extendedItems.push(...allItems);
     }
     setRouletteItems(extendedItems);
 
     const randomItem = getRandomItemByRarity(caseType.items);
+    const winnerIndex = extendedItems.findIndex(item => item.id === randomItem.id && Math.random() > 0.5);
     
     playSound('spin');
 
-    const targetOffset = -(extendedItems.length / 2 * 180) + Math.random() * 180 - 90;
-    setRouletteOffset(targetOffset);
+    setTimeout(() => {
+      const itemWidth = 160;
+      const centerOffset = window.innerWidth / 2 - itemWidth / 2;
+      const targetPosition = -(winnerIndex * itemWidth) + centerOffset;
+      setRouletteOffset(targetPosition);
+    }, 100);
 
     setTimeout(() => {
       setWonItem(randomItem);
@@ -265,7 +353,7 @@ const Index = () => {
       setIsOpening(false);
       setShowResult(true);
       playSound('win');
-    }, 4000);
+    }, 5000);
   };
 
   const sellItem = (inventoryId: string) => {
@@ -296,6 +384,7 @@ const Index = () => {
       return;
     }
 
+    setIsUpgrading(true);
     const selectedItems = inventory.filter(i => selectedUpgradeItems.includes(i.inventoryId));
     const totalValue = selectedItems.reduce((sum, item) => sum + item.price, 0);
     
@@ -304,26 +393,30 @@ const Index = () => {
     
     if (eligibleItems.length === 0) {
       toast.error('Нет подходящих предметов для апгрейда');
+      setIsUpgrading(false);
       return;
     }
 
     const successChance = Math.min(70, 30 + (selectedItems.length * 8));
-    const success = Math.random() * 100 < successChance;
+    
+    setTimeout(() => {
+      const success = Math.random() * 100 < successChance;
+      
+      setInventory(prev => prev.filter(i => !selectedUpgradeItems.includes(i.inventoryId)));
 
-    setInventory(prev => prev.filter(i => !selectedUpgradeItems.includes(i.inventoryId)));
+      if (success) {
+        const upgradedItem = eligibleItems[Math.floor(Math.random() * eligibleItems.length)];
+        const itemWithId = { ...upgradedItem, inventoryId: `${upgradedItem.id}-${Date.now()}` };
+        setInventory(prev => [...prev, itemWithId]);
+        setUpgradeResult({ success: true, item: upgradedItem });
+        playSound('win');
+      } else {
+        setUpgradeResult({ success: false });
+      }
 
-    if (success) {
-      const upgradedItem = eligibleItems[Math.floor(Math.random() * eligibleItems.length)];
-      const itemWithId = { ...upgradedItem, inventoryId: `${upgradedItem.id}-${Date.now()}` };
-      setInventory(prev => [...prev, itemWithId]);
-      toast.success(`Успешный апгрейд! Получен: ${upgradedItem.name}`);
-      playSound('win');
-    } else {
-      toast.error('Апгрейд не удался. Предметы потеряны.');
-    }
-
-    setSelectedUpgradeItems([]);
-    setUpgradeMode(false);
+      setIsUpgrading(false);
+      setSelectedUpgradeItems([]);
+    }, 3000);
   };
 
   const closeDialog = () => {
@@ -333,6 +426,10 @@ const Index = () => {
     setIsOpening(false);
     setRouletteOffset(0);
     setRouletteItems([]);
+  };
+
+  const closeUpgradeResult = () => {
+    setUpgradeResult(null);
   };
 
   const totalValue = inventory.reduce((sum, item) => sum + item.price, 0);
@@ -401,7 +498,7 @@ const Index = () => {
                 <Card
                   key={caseItem.id}
                   className={`${rarityColors[caseItem.rarity]} border-2 p-6 hover:scale-105 transition-transform cursor-pointer animate-slide-up`}
-                  style={{ animationDelay: `${index * 0.05}s` }}
+                  style={{ animationDelay: `${index * 0.03}s` }}
                   onClick={() => openCase(caseItem)}
                 >
                   <div className="text-center space-y-4">
@@ -527,16 +624,16 @@ const Index = () => {
                   <div className="flex gap-4 justify-center">
                     <Button 
                       onClick={performUpgrade}
-                      disabled={selectedUpgradeItems.length === 0}
+                      disabled={selectedUpgradeItems.length === 0 || isUpgrading}
                       className="bg-purple-600 hover:bg-purple-700"
                     >
                       <Icon name="Zap" size={16} className="mr-2" />
-                      Сделать апгрейд
+                      {isUpgrading ? 'Апгрейд...' : 'Сделать апгрейд'}
                     </Button>
                     <Button 
                       variant="outline"
                       onClick={() => setSelectedUpgradeItems([])}
-                      disabled={selectedUpgradeItems.length === 0}
+                      disabled={selectedUpgradeItems.length === 0 || isUpgrading}
                     >
                       Сбросить выбор
                     </Button>
@@ -555,12 +652,12 @@ const Index = () => {
                   {inventory.map((item) => (
                     <Card
                       key={item.inventoryId}
-                      className={`${rarityColors[item.rarity]} border-2 p-4 cursor-pointer transition-all ${
+                      className={`${rarityColors[item.rarity]} border-2 p-4 cursor-pointer transition-all relative ${
                         selectedUpgradeItems.includes(item.inventoryId) 
                           ? 'ring-4 ring-purple-500 scale-105' 
                           : 'hover:scale-105'
-                      }`}
-                      onClick={() => toggleUpgradeItem(item.inventoryId)}
+                      } ${isUpgrading ? 'opacity-50 pointer-events-none' : ''}`}
+                      onClick={() => !isUpgrading && toggleUpgradeItem(item.inventoryId)}
                     >
                       <div className="text-center space-y-2">
                         {selectedUpgradeItems.includes(item.inventoryId) && (
@@ -670,7 +767,7 @@ const Index = () => {
       </main>
 
       <Dialog open={selectedCase !== null} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="sm:max-w-4xl bg-background/95 backdrop-blur-sm">
+        <DialogContent className="sm:max-w-5xl bg-background/95 backdrop-blur-sm">
           <DialogHeader>
             <DialogTitle className="text-center text-2xl">
               {isOpening ? 'Открываем кейс...' : showResult ? 'Поздравляем!' : selectedCase?.name}
@@ -679,16 +776,17 @@ const Index = () => {
           
           <div className="flex flex-col items-center justify-center py-8">
             {isOpening ? (
-              <div className="w-full overflow-hidden relative">
-                <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-primary z-10 shadow-[0_0_20px_rgba(155,135,245,0.8)]" />
+              <div className="w-full overflow-hidden relative h-48">
+                <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-primary z-10 shadow-[0_0_20px_rgba(155,135,245,0.8)] transform -translate-x-1/2" />
                 <div 
-                  className="flex gap-4 py-8 transition-transform duration-[4000ms] ease-out"
+                  className="flex gap-4 py-8 transition-all duration-[4800ms] ease-out absolute"
                   style={{ transform: `translateX(${rouletteOffset}px)` }}
                 >
                   {rouletteItems.map((item, idx) => (
                     <div
                       key={idx}
-                      className={`${rarityColors[item.rarity]} border-2 p-4 rounded-lg flex-shrink-0 w-40`}
+                      className={`${rarityColors[item.rarity]} border-2 p-4 rounded-lg flex-shrink-0`}
+                      style={{ width: '150px' }}
                     >
                       <img src={item.image} alt={item.name} className="w-full h-20 object-contain mb-2" />
                       <p className="text-xs text-white text-center font-semibold truncate">{item.name}</p>
@@ -718,6 +816,62 @@ const Index = () => {
                 </div>
               </div>
             ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isUpgrading || upgradeResult !== null} onOpenChange={(open) => !open && !isUpgrading && closeUpgradeResult()}>
+        <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl">
+              {isUpgrading ? 'Апгрейд...' : upgradeResult?.success ? 'Успех!' : 'Неудача'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center justify-center py-8">
+            {isUpgrading ? (
+              <div className="text-center space-y-6">
+                <div className="relative w-32 h-32 mx-auto">
+                  <div className="absolute inset-0 border-4 border-purple-500 rounded-full animate-ping" />
+                  <div className="absolute inset-0 border-4 border-purple-600 rounded-full animate-spin" />
+                  <Icon name="Zap" size={64} className="absolute inset-0 m-auto text-purple-400 animate-pulse" />
+                </div>
+                <p className="text-lg text-muted-foreground">Обрабатываем апгрейд...</p>
+              </div>
+            ) : upgradeResult?.success && upgradeResult.item ? (
+              <div className={`${rarityColors[upgradeResult.item.rarity]} border-2 p-8 rounded-xl animate-scale-in w-full`}>
+                <div className="text-center space-y-4">
+                  <div className="text-6xl mb-4">🎉</div>
+                  <img src={upgradeResult.item.image} alt={upgradeResult.item.name} className="w-full h-32 object-contain mb-4" />
+                  <h3 className="text-xl font-bold text-white">{upgradeResult.item.name}</h3>
+                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                    {rarityLabels[upgradeResult.item.rarity]}
+                  </Badge>
+                  <div className="flex items-center justify-center gap-2 text-yellow-300 text-xl font-bold">
+                    <Icon name="Coins" size={20} />
+                    <span>{upgradeResult.item.price}</span>
+                  </div>
+                  <Button 
+                    className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 mt-4"
+                    onClick={closeUpgradeResult}
+                  >
+                    Отлично!
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center space-y-6 w-full">
+                <div className="text-6xl mb-4">😔</div>
+                <h3 className="text-2xl font-bold">Апгрейд не удался</h3>
+                <p className="text-muted-foreground">Предметы были потеряны. Попробуй еще раз!</p>
+                <Button 
+                  className="w-full"
+                  onClick={closeUpgradeResult}
+                >
+                  Закрыть
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
