@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,8 +20,13 @@ interface CaseType {
   name: string;
   description: string;
   rarity: Rarity;
+  price: number;
   items: Item[];
 }
+
+const defaultSkinImage = 'https://cdn.poehali.dev/projects/95b577c9-3270-491e-baea-12945f5e5799/files/142152cc-24c7-4b2c-8461-a20ddb85448f.jpg';
+const dragonLoreImage = 'https://cdn.poehali.dev/projects/95b577c9-3270-491e-baea-12945f5e5799/files/af749959-76b3-4be4-a6e1-1246e814f6ee.jpg';
+const karambitImage = 'https://cdn.poehali.dev/projects/95b577c9-3270-491e-baea-12945f5e5799/files/b771e327-6a26-4b16-8030-d4038ba605f0.jpg';
 
 const cases: CaseType[] = [
   {
@@ -29,12 +34,15 @@ const cases: CaseType[] = [
     name: 'Starter Case',
     description: 'Базовый кейс для новичков',
     rarity: 'common',
+    price: 50,
     items: [
-      { id: '1-1', name: 'AK-47 | Redline', rarity: 'rare', image: '🔫' },
-      { id: '1-2', name: 'M4A4 | Asiimov', rarity: 'legendary', image: '🔫' },
-      { id: '1-3', name: 'AWP | Dragon Lore', rarity: 'legendary', image: '🎯' },
-      { id: '1-4', name: 'Glock-18 | Water Elemental', rarity: 'common', image: '🔫' },
-      { id: '1-5', name: 'Desert Eagle | Blaze', rarity: 'rare', image: '🔫' },
+      { id: '1-1', name: 'AK-47 | Redline', rarity: 'rare', image: defaultSkinImage },
+      { id: '1-2', name: 'M4A4 | Asiimov', rarity: 'legendary', image: defaultSkinImage },
+      { id: '1-3', name: 'AWP | Dragon Lore', rarity: 'legendary', image: dragonLoreImage },
+      { id: '1-4', name: 'Glock-18 | Water Elemental', rarity: 'common', image: defaultSkinImage },
+      { id: '1-5', name: 'Desert Eagle | Blaze', rarity: 'rare', image: defaultSkinImage },
+      { id: '1-6', name: 'P90 | Asiimov', rarity: 'common', image: defaultSkinImage },
+      { id: '1-7', name: 'MAC-10 | Neon Rider', rarity: 'common', image: defaultSkinImage },
     ]
   },
   {
@@ -42,12 +50,14 @@ const cases: CaseType[] = [
     name: 'Premium Case',
     description: 'Редкие скины высокого качества',
     rarity: 'rare',
+    price: 100,
     items: [
-      { id: '2-1', name: 'Karambit | Fade', rarity: 'legendary', image: '🗡️' },
-      { id: '2-2', name: 'Butterfly Knife | Tiger Tooth', rarity: 'legendary', image: '🗡️' },
-      { id: '2-3', name: 'M4A1-S | Hyper Beast', rarity: 'rare', image: '🔫' },
-      { id: '2-4', name: 'USP-S | Kill Confirmed', rarity: 'rare', image: '🔫' },
-      { id: '2-5', name: 'P250 | Asiimov', rarity: 'common', image: '🔫' },
+      { id: '2-1', name: 'Karambit | Fade', rarity: 'legendary', image: karambitImage },
+      { id: '2-2', name: 'Butterfly Knife | Tiger Tooth', rarity: 'legendary', image: karambitImage },
+      { id: '2-3', name: 'M4A1-S | Hyper Beast', rarity: 'rare', image: defaultSkinImage },
+      { id: '2-4', name: 'USP-S | Kill Confirmed', rarity: 'rare', image: defaultSkinImage },
+      { id: '2-5', name: 'P250 | Asiimov', rarity: 'common', image: defaultSkinImage },
+      { id: '2-6', name: 'Galil AR | Cerberus', rarity: 'common', image: defaultSkinImage },
     ]
   },
   {
@@ -55,12 +65,14 @@ const cases: CaseType[] = [
     name: 'Legendary Case',
     description: 'Самые редкие предметы',
     rarity: 'legendary',
+    price: 200,
     items: [
-      { id: '3-1', name: 'AWP | Medusa', rarity: 'legendary', image: '🎯' },
-      { id: '3-2', name: 'M9 Bayonet | Crimson Web', rarity: 'legendary', image: '🗡️' },
-      { id: '3-3', name: 'AK-47 | Fire Serpent', rarity: 'legendary', image: '🔫' },
-      { id: '3-4', name: 'Flip Knife | Doppler', rarity: 'legendary', image: '🗡️' },
-      { id: '3-5', name: 'AWP | Lightning Strike', rarity: 'rare', image: '🎯' },
+      { id: '3-1', name: 'AWP | Medusa', rarity: 'legendary', image: dragonLoreImage },
+      { id: '3-2', name: 'M9 Bayonet | Crimson Web', rarity: 'legendary', image: karambitImage },
+      { id: '3-3', name: 'AK-47 | Fire Serpent', rarity: 'legendary', image: defaultSkinImage },
+      { id: '3-4', name: 'Flip Knife | Doppler', rarity: 'legendary', image: karambitImage },
+      { id: '3-5', name: 'AWP | Lightning Strike', rarity: 'rare', image: dragonLoreImage },
+      { id: '3-6', name: 'Desert Eagle | Blaze', rarity: 'rare', image: defaultSkinImage },
     ]
   },
   {
@@ -68,12 +80,13 @@ const cases: CaseType[] = [
     name: 'Knife Case',
     description: 'Только ножи',
     rarity: 'rare',
+    price: 150,
     items: [
-      { id: '4-1', name: 'Karambit | Doppler', rarity: 'legendary', image: '🗡️' },
-      { id: '4-2', name: 'Bayonet | Slaughter', rarity: 'legendary', image: '🗡️' },
-      { id: '4-3', name: 'Huntsman Knife | Fade', rarity: 'rare', image: '🗡️' },
-      { id: '4-4', name: 'Gut Knife | Marble Fade', rarity: 'rare', image: '🗡️' },
-      { id: '4-5', name: 'Falchion Knife | Case Hardened', rarity: 'rare', image: '🗡️' },
+      { id: '4-1', name: 'Karambit | Doppler', rarity: 'legendary', image: karambitImage },
+      { id: '4-2', name: 'Bayonet | Slaughter', rarity: 'legendary', image: karambitImage },
+      { id: '4-3', name: 'Huntsman Knife | Fade', rarity: 'rare', image: karambitImage },
+      { id: '4-4', name: 'Gut Knife | Marble Fade', rarity: 'rare', image: karambitImage },
+      { id: '4-5', name: 'Falchion Knife | Case Hardened', rarity: 'rare', image: karambitImage },
     ]
   },
   {
@@ -81,12 +94,13 @@ const cases: CaseType[] = [
     name: 'AWP Collection',
     description: 'Коллекция снайперских винтовок',
     rarity: 'common',
+    price: 75,
     items: [
-      { id: '5-1', name: 'AWP | Asiimov', rarity: 'rare', image: '🎯' },
-      { id: '5-2', name: 'AWP | Hyper Beast', rarity: 'rare', image: '🎯' },
-      { id: '5-3', name: 'AWP | Redline', rarity: 'common', image: '🎯' },
-      { id: '5-4', name: 'AWP | Fade', rarity: 'legendary', image: '🎯' },
-      { id: '5-5', name: 'AWP | Graphite', rarity: 'common', image: '🎯' },
+      { id: '5-1', name: 'AWP | Asiimov', rarity: 'rare', image: dragonLoreImage },
+      { id: '5-2', name: 'AWP | Hyper Beast', rarity: 'rare', image: dragonLoreImage },
+      { id: '5-3', name: 'AWP | Redline', rarity: 'common', image: dragonLoreImage },
+      { id: '5-4', name: 'AWP | Fade', rarity: 'legendary', image: dragonLoreImage },
+      { id: '5-5', name: 'AWP | Graphite', rarity: 'common', image: dragonLoreImage },
     ]
   },
   {
@@ -94,12 +108,13 @@ const cases: CaseType[] = [
     name: 'Pistol Case',
     description: 'Коллекция пистолетов',
     rarity: 'common',
+    price: 60,
     items: [
-      { id: '6-1', name: 'Glock-18 | Fade', rarity: 'legendary', image: '🔫' },
-      { id: '6-2', name: 'Desert Eagle | Golden Koi', rarity: 'rare', image: '🔫' },
-      { id: '6-3', name: 'USP-S | Orion', rarity: 'rare', image: '🔫' },
-      { id: '6-4', name: 'P2000 | Fire Elemental', rarity: 'common', image: '🔫' },
-      { id: '6-5', name: 'Five-SeveN | Monkey Business', rarity: 'common', image: '🔫' },
+      { id: '6-1', name: 'Glock-18 | Fade', rarity: 'legendary', image: defaultSkinImage },
+      { id: '6-2', name: 'Desert Eagle | Golden Koi', rarity: 'rare', image: defaultSkinImage },
+      { id: '6-3', name: 'USP-S | Orion', rarity: 'rare', image: defaultSkinImage },
+      { id: '6-4', name: 'P2000 | Fire Elemental', rarity: 'common', image: defaultSkinImage },
+      { id: '6-5', name: 'Five-SeveN | Monkey Business', rarity: 'common', image: defaultSkinImage },
     ]
   },
 ];
@@ -119,23 +134,65 @@ const rarityLabels: Record<Rarity, string> = {
 const Index = () => {
   const [activeTab, setActiveTab] = useState('cases');
   const [inventory, setInventory] = useState<Item[]>([]);
+  const [balance, setBalance] = useState(500);
   const [isOpening, setIsOpening] = useState(false);
   const [selectedCase, setSelectedCase] = useState<CaseType | null>(null);
   const [wonItem, setWonItem] = useState<Item | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const [rouletteItems, setRouletteItems] = useState<Item[]>([]);
+  const [rouletteOffset, setRouletteOffset] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    audioRef.current = new Audio();
+  }, []);
+
+  const playSound = (type: 'spin' | 'win') => {
+    if (!audioRef.current) return;
+    
+    if (type === 'spin') {
+      audioRef.current.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCx+zPLTgjEHHW7A7+OZUQ0OVKXi7qxXGAxGnODyv24eBCl6yPLZ';
+      audioRef.current.volume = 0.3;
+    } else {
+      audioRef.current.src = 'data:audio/wav;base64,UklGRi4FAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoFAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCx+zPLTgjEHHW7A7+OZUQ0OVKXi7qxXGAxGnODyv24eBCl6yPLZgSoHGGW57OCXTgwNUKPf776lfJNdGg==';
+      audioRef.current.volume = 0.5;
+    }
+    audioRef.current.play().catch(() => {});
+  };
 
   const openCase = (caseType: CaseType) => {
+    if (balance < caseType.price) {
+      alert('Недостаточно монет!');
+      return;
+    }
+
+    setBalance(prev => prev - caseType.price);
     setSelectedCase(caseType);
     setIsOpening(true);
     setShowResult(false);
 
+    const allItems = [...caseType.items];
+    const extendedItems: Item[] = [];
+    for (let i = 0; i < 50; i++) {
+      extendedItems.push(...allItems);
+    }
+    setRouletteItems(extendedItems);
+
+    const winnerIndex = Math.floor(Math.random() * caseType.items.length);
+    const randomItem = caseType.items[winnerIndex];
+    
+    playSound('spin');
+
+    const targetOffset = -(extendedItems.length / 2 + winnerIndex) * 180 + 90;
+    setRouletteOffset(targetOffset);
+
     setTimeout(() => {
-      const randomItem = caseType.items[Math.floor(Math.random() * caseType.items.length)];
       setWonItem(randomItem);
       setInventory(prev => [...prev, randomItem]);
       setIsOpening(false);
       setShowResult(true);
-    }, 2000);
+      playSound('win');
+    }, 3500);
   };
 
   const closeDialog = () => {
@@ -143,6 +200,8 @@ const Index = () => {
     setWonItem(null);
     setShowResult(false);
     setIsOpening(false);
+    setRouletteOffset(0);
+    setRouletteItems([]);
   };
 
   const totalValue = inventory.length;
@@ -161,6 +220,10 @@ const Index = () => {
               </h1>
             </div>
             <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 px-5 py-2 rounded-lg shadow-lg">
+                <Icon name="Coins" size={20} className="text-yellow-900" />
+                <span className="font-bold text-yellow-900 text-lg">{balance}</span>
+              </div>
               <div className="flex items-center gap-2 bg-secondary px-4 py-2 rounded-lg">
                 <Icon name="Package" size={20} />
                 <span className="font-semibold">{inventory.length}</span>
@@ -192,9 +255,9 @@ const Index = () => {
 
           <TabsContent value="cases" className="space-y-8 animate-fade-in">
             <div className="text-center space-y-4 mb-12">
-              <h2 className="text-4xl font-bold">Открывай кейсы бесплатно</h2>
+              <h2 className="text-4xl font-bold">Открывай кейсы за монеты</h2>
               <p className="text-muted-foreground text-lg">
-                Все кейсы доступны без ограничений
+                Начальный баланс: 500 монет
               </p>
             </div>
 
@@ -213,9 +276,16 @@ const Index = () => {
                     <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
                       {rarityLabels[caseItem.rarity]}
                     </Badge>
-                    <Button className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30">
+                    <div className="flex items-center justify-center gap-2 bg-white/20 px-4 py-2 rounded-lg">
+                      <Icon name="Coins" size={20} className="text-yellow-300" />
+                      <span className="font-bold text-white text-lg">{caseItem.price}</span>
+                    </div>
+                    <Button 
+                      className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30"
+                      disabled={balance < caseItem.price}
+                    >
                       <Icon name="Unlock" size={16} className="mr-2" />
-                      Открыть бесплатно
+                      {balance < caseItem.price ? 'Недостаточно монет' : 'Открыть'}
                     </Button>
                   </div>
                 </Card>
@@ -270,10 +340,10 @@ const Index = () => {
                   {inventory.map((item, index) => (
                     <Card
                       key={`${item.id}-${index}`}
-                      className={`${rarityColors[item.rarity]} border-2 p-4 hover:scale-105 transition-transform`}
+                      className={`${rarityColors[item.rarity]} border-2 p-4 hover:scale-105 transition-transform overflow-hidden`}
                     >
                       <div className="text-center space-y-2">
-                        <div className="text-4xl">{item.image}</div>
+                        <img src={item.image} alt={item.name} className="w-full h-24 object-contain mb-2" />
                         <h4 className="text-sm font-semibold text-white">{item.name}</h4>
                         <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-xs">
                           {rarityLabels[item.rarity]}
@@ -301,14 +371,15 @@ const Index = () => {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-secondary p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Открыто кейсов</p>
-                    <p className="text-2xl font-bold">{inventory.length}</p>
+                    <p className="text-sm text-muted-foreground mb-1">Баланс</p>
+                    <div className="flex items-center gap-2">
+                      <Icon name="Coins" size={20} className="text-yellow-500" />
+                      <p className="text-2xl font-bold">{balance}</p>
+                    </div>
                   </div>
                   <div className="bg-secondary p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Лучший дроп</p>
-                    <p className="text-2xl font-bold">
-                      {legendaryCount > 0 ? '🔥' : rareCount > 0 ? '⭐' : '📦'}
-                    </p>
+                    <p className="text-sm text-muted-foreground mb-1">Открыто кейсов</p>
+                    <p className="text-2xl font-bold">{inventory.length}</p>
                   </div>
                 </div>
 
@@ -351,7 +422,7 @@ const Index = () => {
       </main>
 
       <Dialog open={selectedCase !== null} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-3xl bg-background/95 backdrop-blur-sm">
           <DialogHeader>
             <DialogTitle className="text-center text-2xl">
               {isOpening ? 'Открываем кейс...' : showResult ? 'Поздравляем!' : selectedCase?.name}
@@ -360,14 +431,27 @@ const Index = () => {
           
           <div className="flex flex-col items-center justify-center py-8">
             {isOpening ? (
-              <div className="space-y-6 text-center">
-                <div className="text-8xl animate-glow">📦</div>
-                <p className="text-lg text-muted-foreground">Определяем ваш приз...</p>
+              <div className="w-full overflow-hidden relative">
+                <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-primary z-10 shadow-[0_0_20px_rgba(155,135,245,0.8)]" />
+                <div 
+                  className="flex gap-4 py-8 transition-transform duration-[3500ms] ease-out"
+                  style={{ transform: `translateX(${rouletteOffset}px)` }}
+                >
+                  {rouletteItems.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className={`${rarityColors[item.rarity]} border-2 p-4 rounded-lg flex-shrink-0 w-40`}
+                    >
+                      <img src={item.image} alt={item.name} className="w-full h-20 object-contain mb-2" />
+                      <p className="text-xs text-white text-center font-semibold truncate">{item.name}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : showResult && wonItem ? (
-              <div className={`${rarityColors[wonItem.rarity]} border-2 p-8 rounded-xl animate-scale-in`}>
+              <div className={`${rarityColors[wonItem.rarity]} border-2 p-8 rounded-xl animate-scale-in max-w-md w-full`}>
                 <div className="text-center space-y-4">
-                  <div className="text-8xl mb-4">{wonItem.image}</div>
+                  <img src={wonItem.image} alt={wonItem.name} className="w-full h-40 object-contain mb-4" />
                   <h3 className="text-2xl font-bold text-white">{wonItem.name}</h3>
                   <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-lg px-4 py-1">
                     {rarityLabels[wonItem.rarity]}
