@@ -237,10 +237,10 @@ const rarityLabels: Record<Rarity, string> = {
 };
 
 const rarityChances: Record<Rarity, number> = {
-  common: 70,
-  rare: 22,
-  epic: 6,
-  legendary: 2,
+  common: 55,
+  rare: 30,
+  epic: 11,
+  legendary: 4,
 };
 
 const Index = () => {
@@ -257,6 +257,9 @@ const Index = () => {
   const [selectedUpgradeItems, setSelectedUpgradeItems] = useState<string[]>([]);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [upgradeResult, setUpgradeResult] = useState<{ success: boolean; item?: Item } | null>(null);
+  const [bulkOpenCount, setBulkOpenCount] = useState(1);
+  const [bulkOpenDialog, setBulkOpenDialog] = useState(false);
+  const [bulkResults, setBulkResults] = useState<Item[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -316,8 +319,15 @@ const Index = () => {
   };
 
   const openCase = (caseType: CaseType) => {
-    if (balance < caseType.price) {
-      toast.error('Недостаточно монет для открытия кейса!');
+    const totalCost = caseType.price * bulkOpenCount;
+    
+    if (balance < totalCost) {
+      toast.error('Недостаточно монет для открытия кейсов!');
+      return;
+    }
+
+    if (bulkOpenCount > 1) {
+      openBulkCases(caseType);
       return;
     }
 
@@ -419,6 +429,23 @@ const Index = () => {
     }, 3000);
   };
 
+  const openBulkCases = (caseType: CaseType) => {
+    const totalCost = caseType.price * bulkOpenCount;
+    setBalance(prev => prev - totalCost);
+    
+    const results: Item[] = [];
+    for (let i = 0; i < bulkOpenCount; i++) {
+      const randomItem = getRandomItemByRarity(caseType.items);
+      results.push(randomItem);
+    }
+    
+    const itemsWithIds = results.map(item => ({ ...item, inventoryId: `${item.id}-${Date.now()}-${Math.random()}` }));
+    setInventory(prev => [...prev, ...itemsWithIds]);
+    setBulkResults(results);
+    setBulkOpenDialog(true);
+    playSound('win');
+  };
+
   const closeDialog = () => {
     setSelectedCase(null);
     setWonItem(null);
@@ -426,6 +453,11 @@ const Index = () => {
     setIsOpening(false);
     setRouletteOffset(0);
     setRouletteItems([]);
+  };
+
+  const closeBulkDialog = () => {
+    setBulkOpenDialog(false);
+    setBulkResults([]);
   };
 
   const closeUpgradeResult = () => {
@@ -493,6 +525,50 @@ const Index = () => {
               </p>
             </div>
 
+            <div className="mb-8 flex justify-center">
+              <Card className="p-6 bg-secondary">
+                <div className="flex items-center gap-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Количество кейсов</p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setBulkOpenCount(Math.max(1, bulkOpenCount - 1))}
+                      >
+                        <Icon name="Minus" size={16} />
+                      </Button>
+                      <div className="w-20 text-center">
+                        <span className="text-2xl font-bold">{bulkOpenCount}</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setBulkOpenCount(Math.min(10, bulkOpenCount + 1))}
+                      >
+                        <Icon name="Plus" size={16} />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="border-l pl-6">
+                    <p className="text-sm text-muted-foreground mb-2">Быстрые выборы</p>
+                    <div className="flex gap-2">
+                      {[1, 3, 5, 10].map(count => (
+                        <Button
+                          key={count}
+                          variant={bulkOpenCount === count ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setBulkOpenCount(count)}
+                        >
+                          x{count}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {cases.map((caseItem, index) => (
                 <Card
@@ -510,14 +586,14 @@ const Index = () => {
                     </Badge>
                     <div className="flex items-center justify-center gap-2 bg-white/20 px-4 py-2 rounded-lg">
                       <Icon name="Coins" size={20} className="text-yellow-300" />
-                      <span className="font-bold text-white text-lg">{caseItem.price}</span>
+                      <span className="font-bold text-white text-lg">{caseItem.price * bulkOpenCount}</span>
                     </div>
                     <Button 
                       className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30"
-                      disabled={balance < caseItem.price}
+                      disabled={balance < caseItem.price * bulkOpenCount}
                     >
                       <Icon name="Unlock" size={16} className="mr-2" />
-                      {balance < caseItem.price ? 'Недостаточно' : 'Открыть'}
+                      {balance < caseItem.price * bulkOpenCount ? 'Недостаточно' : bulkOpenCount > 1 ? `Открыть x${bulkOpenCount}` : 'Открыть'}
                     </Button>
                   </div>
                 </Card>
@@ -872,6 +948,70 @@ const Index = () => {
                 </Button>
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkOpenDialog} onOpenChange={(open) => !open && closeBulkDialog()}>
+        <DialogContent className="sm:max-w-4xl bg-background/95 backdrop-blur-sm max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl">Открыто {bulkResults.length} кейсов! 🎉</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="p-4 bg-gradient-to-br from-green-500/20 to-green-500/5 border-green-500/30">
+                <p className="text-sm text-muted-foreground mb-1">Общая стоимость</p>
+                <div className="flex items-center gap-2">
+                  <Icon name="TrendingUp" size={20} className="text-green-400" />
+                  <p className="text-2xl font-bold text-green-400">
+                    {bulkResults.reduce((sum, item) => sum + item.price, 0)}
+                  </p>
+                </div>
+              </Card>
+              <Card className="p-4 bg-gradient-to-br from-orange-500/20 to-orange-500/5 border-orange-500/30">
+                <p className="text-sm text-muted-foreground mb-1">Лучший дроп</p>
+                <div className="flex items-center gap-2">
+                  <Icon name="Star" size={20} className="text-orange-400" />
+                  <p className="text-lg font-bold text-orange-400">
+                    {rarityLabels[bulkResults.reduce((best, item) => 
+                      ['common', 'rare', 'epic', 'legendary'].indexOf(item.rarity) > 
+                      ['common', 'rare', 'epic', 'legendary'].indexOf(best.rarity) ? item : best
+                    ).rarity]}
+                  </p>
+                </div>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {bulkResults.map((item, idx) => (
+                <Card
+                  key={idx}
+                  className={`${rarityColors[item.rarity]} border-2 p-3 animate-scale-in`}
+                  style={{ animationDelay: `${idx * 0.05}s` }}
+                >
+                  <div className="text-center space-y-2">
+                    <img src={item.image} alt={item.name} className="w-full h-16 object-contain mb-1" />
+                    <h4 className="text-xs font-semibold text-white line-clamp-2">{item.name}</h4>
+                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-xs">
+                      {rarityLabels[item.rarity]}
+                    </Badge>
+                    <div className="flex items-center justify-center gap-1 text-yellow-300 font-bold">
+                      <Icon name="Coins" size={12} />
+                      <span className="text-xs">{item.price}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            <Button 
+              className="w-full"
+              onClick={closeBulkDialog}
+            >
+              <Icon name="Package" size={16} className="mr-2" />
+              Все предметы добавлены в инвентарь
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
